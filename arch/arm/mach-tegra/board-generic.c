@@ -43,7 +43,7 @@
 #include "nvodm_query.h"
 #include "nvodm_query_discovery.h"
 #include "board.h"
-
+#include <linux/atmel_maxtouch.h>
 #ifdef CONFIG_USB_ANDROID
 
 static char *tegra_android_functions_ums[] = {
@@ -176,11 +176,42 @@ static struct platform_device *platform_devices[] = {
 #endif
 };
 
+#ifdef CONFIG_TOUCHSCREEN_MAXTOUCH1386
+#define TEGRA_GPIO_MAXTOUCH		TEGRA_GPIO_PJ7
+static void maxtouch_init_platform() 
+{
+	int ret;
+	ret = gpio_request(TEGRA_GPIO_MAXTOUCH, "gpio_maxtouch");
+	if (ret < 0) {
+		printk("Unable to erquest irq TEGRA_GPIO_MAXTOUCH");
+		return;
+	}
+	gpio_direction_input(TEGRA_GPIO_MAXTOUCH);
+}
+static void maxtouch_exit_platform()
+{
+	gpio_free(TEGRA_GPIO_MAXTOUCH);
+}
+static struct mxt_platform_data maxtouch_platform_data = {
+	.max_x = 1280,
+	.max_y = 800, 
+	.init_platform_hw = maxtouch_init_platform,
+	.exit_platform_hw = maxtouch_exit_platform,
+};
+#endif
+
 static struct i2c_board_info bus0_i2c_devices[] = {
 #ifdef CONFIG_ISL29018
 	{
 		I2C_BOARD_INFO("isl29018", 0x44),
 		.irq = (INT_GPIO_BASE + TEGRA_GPIO_PZ2),
+	},
+#endif
+#ifdef CONFIG_TOUCHSCREEN_MAXTOUCH1386
+	{
+		I2C_BOARD_INFO("maXTouch", 0x4C),//
+		.irq = (INT_GPIO_BASE + TEGRA_GPIO_MAXTOUCH),
+		.platform_data = &maxtouch_platform_data, 
 	},
 #endif
 };
@@ -293,6 +324,9 @@ static void __init do_system_init(bool standard_i2c, bool standard_spi)
 	tegra_android_platform.serial_number = kstrdup(serial, GFP_KERNEL);
 #endif
 	platform_add_devices(platform_devices, ARRAY_SIZE(platform_devices));
+
+	system_serial_high = chip_id[0];
+	system_serial_low = chip_id[1];
 }
 
 #ifdef CONFIG_BT_BLUESLEEP
@@ -405,6 +439,9 @@ static void __init tegra_harmony_init(void)
 #endif
 	do_system_init(true, true);
 	tegra_setup_bluesleep_csr();
+#ifdef CONFIG_TOUCHSCREEN_MAXTOUCH1386
+        i2c_device_setup();
+#endif
 }
 
 

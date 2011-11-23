@@ -459,6 +459,8 @@ NvOdmPeripheralGetBoardInfo(
     NvU16 BoardId,
     NvOdmBoardInfo *pBoardInfo)
 {
+	return NV_FALSE;
+
     NvBool RetVal = NV_FALSE;
     NvOdmServicesI2cHandle hOdmI2c = NULL;
     NvU8 EepromInst, CurrentBoard;
@@ -466,11 +468,9 @@ NvOdmPeripheralGetBoardInfo(
     static NvBool s_ReadBoardInfoDone = NV_FALSE;
 
     if (!s_ReadBoardInfoDone)
-        hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c_Pmu, 0);
-
-    if (!s_ReadBoardInfoDone)
     {
         s_ReadBoardInfoDone = NV_TRUE;
+        hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c_Pmu, 0);
         if (!hOdmI2c)
         {
             // Exit
@@ -485,9 +485,8 @@ NvOdmPeripheralGetBoardInfo(
             if (RetVal == NV_TRUE)
                 NumBoards++;
         }
-    }
-    if (hOdmI2c)
         NvOdmI2cClose(hOdmI2c);
+    }
 
     if (NumBoards)
     {
@@ -509,7 +508,11 @@ NvOdmPeripheralGetBoardInfo(
 
     // Match not found
     pBoardInfo = NULL;
-    return NV_FALSE;
+ #if 0//(defined(CONFIG_7373C_V20)||defined(CONFIG_7332C_V21)||defined(CONFIG_7564C_V10)||defined(CONFIG_7265C_V20)||defined(CONFIG_7323C_V21))
+	return NV_TRUE;
+#else
+	return NV_FALSE;
+#endif
 }
 
 // This will compare the peripheral GUID against a list of known-bad GUIDs
@@ -627,15 +630,12 @@ NvOdmPeripheralGetGuid(NvU64 SearchGuid)
     const NvOdmPeripheralConnectivity *pAllPeripherals;
     NvU32 NumPeripherals;
     NvU32 i;
-    NvBool IsE1206Board;
 
     pAllPeripherals = NvApGetAllPeripherals(&NumPeripherals);
 
-    IsE1206Board = IsBoardTango();
     if (!pAllPeripherals || !NumPeripherals)
         return NULL;
-    if ((SearchGuid == ACCEL_TANGO_GUID) && (!IsE1206Board))
-        return NULL;
+
     for (i=0; i<NumPeripherals; i++) 
     {
         if (SearchGuid == pAllPeripherals[i].Guid)

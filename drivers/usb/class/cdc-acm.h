@@ -112,10 +112,15 @@ struct acm {
 	struct mutex mutex;
 	struct usb_cdc_line_coding line;		/* bits, stop, parity */
 	struct work_struct work;			/* work queue entry for line discipline waking up */
+#if !defined(CONFIG_ERICSSON_F3307_ENABLE)	
 	struct work_struct waker;
+#endif
 	wait_queue_head_t drain_wait;			/* close processing */
 	struct tasklet_struct urb_task;                 /* rx processing */
 	spinlock_t throttle_lock;			/* synchronize throtteling and read callback */
+#if defined(CONFIG_ERICSSON_F3307_ENABLE)
+	__le16 idle;
+#endif
 	unsigned int ctrlin;				/* input control lines (DCD, DSR, RI, break, overruns) */
 	unsigned int ctrlout;				/* output control lines (DTR, RTS) */
 	unsigned int writesize;				/* max packet size for the output bulk endpoint */

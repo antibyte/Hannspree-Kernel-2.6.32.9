@@ -753,14 +753,14 @@ UNUSUAL_DEV( 0x05ac, 0x120a, 0x0000, 0x9999,
  * Option N.V. mobile broadband modems
  * Ignore driver CD mode and force into modem mode by default.
  */
-
+#if 0 //Mask for SRBComms 3G module. Conlin, 20110518
 /* Globetrotter HSDPA; mass storage shows up as Qualcomm for vendor */
 UNUSUAL_DEV(  0x05c6, 0x1000, 0x0000, 0x9999,
 		"Option N.V.",
 		"Mass Storage",
 		US_SC_DEVICE, US_PR_DEVICE, option_ms_init,
 		0),
-
+#endif
 /* Reported by Blake Matheny <bmatheny@purdue.edu> */
 UNUSUAL_DEV(  0x05dc, 0xb002, 0x0000, 0x0113,
 		"Lexar",

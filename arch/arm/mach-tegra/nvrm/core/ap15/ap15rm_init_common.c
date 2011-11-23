@@ -235,6 +235,49 @@ NvRmPrivReadChipId( NvRmDeviceHandle rm )
 #endif
 }
 
+void NvRmPrivGetCpuIdInfo(NvU32 *id,NvU32 *family,NvU32 *major,NvU32 *minor,NvU32 *sku)
+{
+	#define TAG "GetCpuIdInfo: "
+	NvRmDeviceHandle rm;
+
+	rm=(NvRmDeviceHandle)NvOsAlloc(sizeof(NvRmDevice));
+	
+	if(rm==NULL) 
+	{
+		NvOsDebugPrintf(TAG "NvOsAlloc rm fail!\n");
+		return;
+	}
+
+	NvRmPrivReadChipId(rm);
+	
+	#if 0
+	typedef enum
+	{
+	    NvRmChipFamily_Gpu = 0,
+	    NvRmChipFamily_Handheld = 1,
+	    NvRmChipFamily_BrChips = 2,
+	    NvRmChipFamily_Crush = 3,
+	    NvRmChipFamily_Mcp = 4,
+	    NvRmChipFamily_Ck = 5,
+	    NvRmChipFamily_Vaio = 6,
+	    NvRmChipFamily_HandheldSoc = 7,
+
+	    NvRmChipFamily_Force32 = 0x7FFFFFFF,
+	} NvRmChipFamily;
+	#endif
+	if(id!=NULL) *id=rm->ChipId.Id;
+	if(family!=NULL) *family=rm->ChipId.Family;
+	if(major!=NULL) *major=rm->ChipId.Family;
+	if(minor!=NULL) *minor=rm->ChipId.Minor;
+	if(sku!=NULL) *sku=rm->ChipId.SKU;
+	
+	/*if(id!=NULL&&family!=NULL&&major!=NULL&&minor!=NULL&&sku!=NULL)
+	 NvOsDebugPrintf( "second Chip Id: 0x%x Family:0x%x Major: 0x%x Minor: 0x%x "
+            "SKU: 0x%x\n", *id,*family, *major, *minor, *sku );*/
+	
+	NvOsFree(rm);
+}
+
 void
 NvRmPrivGetSku( NvRmDeviceHandle rm )
 {

@@ -819,11 +819,18 @@ static int usb_stor_scan_thread(void * __us)
 	set_freezable();
 	/* Wait for the timeout to expire or for a disconnect */
 	if (delay_use > 0) {
+		int delay_use_tmp=delay_use;
+		
+		if( 0x0781==le16_to_cpu(us->pusb_dev->descriptor.idVendor) && 0x5530==le16_to_cpu(us->pusb_dev->descriptor.idProduct) )
+		{//sandisk cruzer 32GB usb drive
+			delay_use_tmp = 10;
+		}
+		
 		printk(KERN_DEBUG "usb-storage: waiting for device "
 				"to settle before scanning\n");
 		wait_event_freezable_timeout(us->delay_wait,
 				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
-				delay_use * HZ);
+				delay_use_tmp * HZ);
 	}
 
 	/* If the device is still connected, perform the scanning */

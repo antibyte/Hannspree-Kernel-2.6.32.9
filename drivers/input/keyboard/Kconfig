@@ -437,4 +437,16 @@ config KEYBOARD_W90P910
 	  To compile this driver as a module, choose M here: the
 	  module will be called w90p910_keypad.
 
+config KEYBOARD_SO340010
+	boolean "touch keys support for SMBA1102"
+	depends on ARCH_TEGRA
+	help
+		Say Y here if you want to enable HOME/CANCEL/MENU keys.
+   
+
+config KEYBOARD_SO340010_LED
+	boolean "touch keys led support for SMBA1002"
+	depends on KEYBOARD_SO340010
+	help
+	  Say Y here to enable touch key's LED of SO340010 
 endif

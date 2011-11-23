@@ -22,9 +22,22 @@
 #include "nvodm_services.h"
 #include "nvodm_query_discovery.h"
 #include "nvodm_pmu.h"
-
+#if (defined(CONFIG_7546Y_V10))
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/switch.h>
+#include <linux/device.h>
+#include <linux/delay.h>
+#include <linux/platform_device.h>
+#endif
 #define VIBRATE_DEVICE_GUID NV_ODM_GUID('v','i','b','r','a','t','o','r')
-
+#if (defined(CONFIG_7546Y_V10))
+#define VIBRATE_DET_ENABLE_PORT		'v'-'a'    //hzj added
+#define VIBRATE_DET_ENABLE_PIN			4          //hzj added
+#define VIBRATE_SE_PORT		'd'-'a'    //hzj added
+#define VIBRATE_SE_PIN			4          //hzj added
+#endif
 /**
  * @brief Used to enable/disable debug print messages.
  */
@@ -43,7 +56,13 @@ typedef struct NvOdmVibDeviceRec
 
     /*Pmu Vdd Rail capabilities*/
     NvOdmServicesPmuVddRailCapabilities RailCaps;
-
+#if (defined(CONFIG_7546Y_V10))
+    /*hzj added motor*/
+    NvOdmServicesGpioHandle vibrate_gpio;
+    NvOdmGpioPinHandle vibrate_pin;
+    NvOdmServicesGpioHandle vibrate_segpio;
+    NvOdmGpioPinHandle vibrate_sepin;
+#endif
     /* Pmu Rail ID*/
     NvU32  VddId;
 
@@ -73,7 +92,40 @@ NvOdmVibOpen(NvOdmVibDeviceHandle *hOdmVibrate)
         return NV_FALSE;
     }
     NvOsMemset((*hOdmVibrate), 0, sizeof(NvOdmVibDevice));
+#if (defined(CONFIG_7546Y_V10))    /*HZJ ADD FOR VIBRATE*/
+   (*hOdmVibrate)->vibrate_gpio= NvOdmGpioOpen();
+	if (!(*hOdmVibrate)->vibrate_gpio) {
+		NV_ODM_TRACE("err open gpio vibrate hzj added\r\n");
+		kfree(*hOdmVibrate);
+		return -1;
+	}	
 
+   	(*hOdmVibrate)->vibrate_pin = NvOdmGpioAcquirePinHandle((*hOdmVibrate)->vibrate_gpio, VIBRATE_DET_ENABLE_PORT, VIBRATE_DET_ENABLE_PIN);
+	if (!(*hOdmVibrate)->vibrate_pin) {
+		NV_ODM_TRACE("err acquire detect pin handle vibrate\r\n");
+		NvOdmGpioClose((*hOdmVibrate)->vibrate_gpio);
+		return -1;
+	}
+
+	NvOdmGpioConfig((*hOdmVibrate)->vibrate_gpio, (*hOdmVibrate)->vibrate_pin, NvOdmGpioPinMode_Output);
+  /*End Hzj aded*/ 
+   (*hOdmVibrate)->vibrate_segpio= NvOdmGpioOpen();
+	if (!(*hOdmVibrate)->vibrate_segpio) {
+		NV_ODM_TRACE("err open gpio vibrate hzj added\r\n");
+		kfree(*hOdmVibrate);
+		return -1;
+	}
+
+   	(*hOdmVibrate)->vibrate_sepin = NvOdmGpioAcquirePinHandle((*hOdmVibrate)->vibrate_segpio, VIBRATE_SE_PORT, VIBRATE_SE_PIN);
+	if (!(*hOdmVibrate)->vibrate_sepin) {
+		NV_ODM_TRACE("err acquire detect pin handle vibrate\r\n");
+		NvOdmGpioClose((*hOdmVibrate)->vibrate_segpio);
+		return -1;
+	}
+
+	NvOdmGpioConfig((*hOdmVibrate)->vibrate_segpio, (*hOdmVibrate)->vibrate_sepin, NvOdmGpioPinMode_Output);
+  
+#endif
     /* Get the PMU handle */
     (*hOdmVibrate)->hOdmServicePmuDevice = NvOdmServicesPmuOpen();
     if (!(*hOdmVibrate)->hOdmServicePmuDevice)
@@ -199,6 +251,10 @@ NvOdmVibStart(NvOdmVibDeviceHandle hOdmVibrate)
         return NV_FALSE;
     }
 
+#if (defined(CONFIG_7546Y_V10)) 
+     NvOdmGpioSetState(hOdmVibrate->vibrate_gpio, hOdmVibrate->vibrate_pin, 1); //Hzj added
+     NvOdmGpioSetState(hOdmVibrate->vibrate_segpio, hOdmVibrate->vibrate_sepin, 1);
+#else
     if (hOdmVibrate->hOdmServicePmuDevice != NULL)
     {
         // Search for the Vdd rail and power Off the module
@@ -211,7 +267,7 @@ NvOdmVibStart(NvOdmVibDeviceHandle hOdmVibrate)
                 NvOdmOsWaitUS(SettlingTime);
         }
     }
-
+#endif
     return NV_TRUE;
 }
 
@@ -232,6 +288,10 @@ NvOdmVibStop(NvOdmVibDeviceHandle hOdmVibrate)
         return NV_FALSE;
     }
 
+#if (defined(CONFIG_7546Y_V10))
+    NvOdmGpioSetState(hOdmVibrate->vibrate_gpio, hOdmVibrate->vibrate_pin, 0); //Hzj added
+     NvOdmGpioSetState(hOdmVibrate->vibrate_segpio, hOdmVibrate->vibrate_sepin, 0); //Hzj added
+#else
     if (hOdmVibrate->hOdmServicePmuDevice != NULL)
     {
         // Search for the Vdd rail and power Off the module
@@ -244,6 +304,6 @@ NvOdmVibStop(NvOdmVibDeviceHandle hOdmVibrate)
                 NvOdmOsWaitUS(SettlingTime);
         }
     }
-
+#endif
     return NV_TRUE;
 }
